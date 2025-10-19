@@ -1,5 +1,6 @@
 DOMAIN = "tado_boost"
 PLATFORMS = []
+CONF_REFRESH_TOKEN = "refresh_token"
 OAUTH2_AUTHORIZE = "https://auth.tado.com/oauth/authorize"
 OAUTH2_TOKEN = "https://auth.tado.com/oauth/token"
 OAUTH2_SCOPES = ["home.user:all"]

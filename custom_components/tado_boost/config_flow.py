@@ -1,60 +1,123 @@
 from __future__ import annotations
 
 import logging
+import asyncio
+from collections.abc import Mapping
+from typing import Any
+
+from yarl import URL
+
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlow
 
-# Try to import OAuth2 helper in a robust way; some HA variants may not expose it
-# or it may raise at import time. We avoid letting import errors propagate and
-# provide a clear fallback that aborts the flow with a helpful message.
-try:
-    from homeassistant.helpers import config_entry_oauth2_flow
-    OAuthHelperAvailable = hasattr(config_entry_oauth2_flow, "OAuth2FlowHandler")
-except Exception as exc:  # pragma: no cover - runtime environments may differ
-    config_entry_oauth2_flow = None  # type: ignore[assignment]
-    OAuthHelperAvailable = False
-    # Log full exception so the runtime reason is visible in Home Assistant logs
-    _temp_logger = logging.getLogger("custom_components.tado_boost.import")
-    _temp_logger.exception("Failed importing Home Assistant OAuth2 helper: %s", exc)
+from PyTado.interface import Tado
+from PyTado.exceptions import TadoException
+from PyTado.http import DeviceActivationStatus
 
-from .const import DOMAIN, OAUTH2_AUTHORIZE, OAUTH2_TOKEN, OAUTH2_SCOPES
+from .const import DOMAIN, CONF_REFRESH_TOKEN
 
 _LOGGER = logging.getLogger(__name__)
 
-if OAuthHelperAvailable:
-    _LOGGER.debug("OAuth2 helper detected: using Home Assistant OAuth2FlowHandler")
 
-    class TadoOAuth2FlowHandler(config_entry_oauth2_flow.OAuth2FlowHandler):
-        """OAuth2 config flow for Tado Boost using Home Assistant OAuth helper."""
-        DOMAIN = DOMAIN
-        OAUTH2_AUTHORIZE = OAUTH2_AUTHORIZE
-        OAUTH2_TOKEN = OAUTH2_TOKEN
-        OAUTH2_SCOPES = OAUTH2_SCOPES
+class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
+    """Config flow for Tado Boost using device activation (PyTado)."""
 
-        async def async_step_user(self, user_input=None):
-            # Delegate to the helper which starts the authorize flow
-            return await super().async_step_user()
+    VERSION = 1
+    login_task: asyncio.Task | None = None
+    refresh_token: str | None = None
+    tado: Tado | None = None
 
-        async def async_step_reauth(self, data):
-            # Start the reauth (will prompt user to re-login)
-            self._reauth_entry = data
-            return await super().async_step_reauth(data)
-else:
-    _LOGGER.debug("OAuth2 helper NOT detected at import time; falling back to aborting flow")
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigEntry | dict:
+        """Start device activation login flow.
 
-    class TadoOAuth2FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-        """Fallback ConfigFlow when OAuth helper is not available."""
+        This will show a progress step where the user is instructed to visit
+        the displayed URL and enter the code. The helper will poll for device
+        activation and obtain a refresh token which is stored in the config entry.
+        """
+        if self.tado is None:
+            _LOGGER.debug("Initiating device activation")
+            try:
+                self.tado = await self.hass.async_add_executor_job(Tado)
+            except TadoException:
+                _LOGGER.exception("Error while initiating Tado")
+                return self.async_abort(reason="cannot_connect")
+            assert self.tado is not None
+            tado_device_url = self.tado.device_verification_url()
+            user_code = URL(tado_device_url).query.get("user_code")
 
-        async def async_step_user(self, user_input=None):
-            _LOGGER.error(
-                "OAuth2 helper not available in this Home Assistant; "
-                "this integration requires a Home Assistant version that provides "
-                "the OAuth2 config flow helper. Please upgrade Home Assistant "
-                "to a recent release (recommended >= 2021.6) and try again."
+        async def _wait_for_login() -> None:
+            assert self.tado is not None
+            _LOGGER.debug("Waiting for device activation")
+            try:
+                await self.hass.async_add_executor_job(self.tado.device_activation)
+            except Exception as ex:  # pragma: no cover - propagate for logging
+                _LOGGER.exception("Error while waiting for device activation")
+                raise
+
+            if (
+                self.tado.device_activation_status()
+                is not DeviceActivationStatus.COMPLETED
+            ):
+                raise Exception("Device activation not completed")
+
+        _LOGGER.debug("Checking login task")
+        if self.login_task is None:
+            _LOGGER.debug("Creating task for device activation")
+            self.login_task = self.hass.async_create_task(_wait_for_login())
+
+        if self.login_task.done():
+            _LOGGER.debug("Login task is done, finalizing login")
+            if self.login_task.exception():
+                return self.async_abort(reason="cannot_connect")
+
+            # Obtain refresh token and create entry
+            try:
+                self.refresh_token = await self.hass.async_add_executor_job(
+                    self.tado.get_refresh_token
+                )
+            except Exception:
+                _LOGGER.exception("Failed to get refresh token from Tado")
+                return self.async_abort(reason="cannot_connect")
+
+            # Get me to find home id/name
+            try:
+                tado_me = await self.hass.async_add_executor_job(self.tado.get_me)
+            except Exception:
+                _LOGGER.exception("Failed to fetch Tado account info")
+                return self.async_abort(reason="cannot_connect")
+
+            if "homes" not in tado_me or len(tado_me["homes"]) == 0:
+                return self.async_abort(reason="no_homes")
+
+            home = tado_me["homes"][0]
+            unique_id = str(home["id"])
+            name = home["name"]
+
+            await self.async_set_unique_id(unique_id)
+            self._abort_if_unique_id_configured()
+
+            return self.async_create_entry(
+                title=name,
+                data={CONF_REFRESH_TOKEN: self.refresh_token},
             )
-            return self.async_abort(reason="oauth_not_supported")
 
-        async def async_step_reauth(self, data):
-            _LOGGER.error(
-                "OAuth2 helper not available for reauth; aborting reauth flow"
-            )
-            return self.async_abort(reason="reauth_not_supported")
+        # Show progress step
+        return self.async_show_progress(
+            step_id="user",
+            progress_action="wait_for_device",
+            description_placeholders={
+                "url": tado_device_url,
+                "code": user_code,
+            },
+            progress_task=self.login_task,
+        )
+
+    async def async_step_reauth(self, data: Mapping[str, Any]) -> config_entries.ConfigEntry | dict:
+        """Handle reauth by starting the device activation again."""
+        self._reauth_entry = data
+        # Reset state so we start a fresh activation
+        self.login_task = None
+        self.tado = None
+        return await self.async_step_user()
