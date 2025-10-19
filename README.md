@@ -43,18 +43,6 @@ data:
   minutes: 15
 ```
 
-Tipy a doporučení před zveřejněním
----------------------------------
-- V `manifest.json` a `CODEOWNERS` nahraďte `@snapicek` vaším uživatelským jménem.
-- Ujistěte se, že `hacs.json` obsahuje správné `owner` a `repo` pole.
-- Přidejte `README.md` a screenshoty konfigurace pro lepší přijetí v HACS. HACS dále preferuje, když je repozitář veřejný a má alespoň jeden release.
-- Přidejte `strings.json` (překlady) pro lepší UI zážitek; v této verzi je základní `translations/en.json` k dispozici.
-- Zvažte přidání jednoduchých unit testů.
-
-Bezpečnost a soukromí
----------------------
-- Nikdy nezveřejňujte `client_secret` pokud nemáte důvod; pokud chcete veřejnou integraci, zvažte použít centrálně registrovaného klienta nebo poskytněte instrukce, jak si jej uživatel vytvoří.
-
 Poznámka o autorství a odpovědnosti
 ----------------------------------
 Tento projekt obsahuje části kódu, které byly vytvořeny s pomocí AI asistenta (GitHub Copilot). Uveďme následující body otevřeně:
@@ -66,11 +54,3 @@ Tento projekt obsahuje části kódu, které byly vytvořeny s pomocí AI asiste
 
 Poznámka: Nejde o právní poradenství. Pokud potřebujete přesné právní vyjádření k autorství nebo odpovědnosti, konzultujte prosím právníka.
 
-Další pomoc
------------
-Chcete, abych:
-1) doplnil `manifest.json`, `hacs.json` a `CODEOWNERS` s vaším GitHub jménem (uvedete ho) a vytvořil návrh `release` tagu, nebo
-2) vytvořil `strings.json` a rozšířil překlady do dalších jazyků, nebo
-3) připravil pull-request template / issue template pro nový repozitář?
-
-Napište, kterou z možností chcete, a provedu to dál.
