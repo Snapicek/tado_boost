@@ -36,6 +36,7 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
         the displayed URL and enter the code. The helper will poll for device
         activation and obtain a refresh token which is stored in the config entry.
         """
+        # Ensure we have a Tado instance
         if self.tado is None:
             _LOGGER.debug("Initiating device activation")
             try:
@@ -44,13 +45,23 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Error while initiating Tado")
                 return self.async_abort(reason="cannot_connect")
             assert self.tado is not None
-            tado_device_url = self.tado.device_verification_url()
-            user_code = URL(tado_device_url).query.get("user_code")
+
+        # Get device verification URL in executor as it may perform network/blocking ops
+        try:
+            tado_device_url = await self.hass.async_add_executor_job(
+                self.tado.device_verification_url
+            )
+        except Exception:
+            _LOGGER.exception("Failed to get device verification URL")
+            return self.async_abort(reason="cannot_connect")
+
+        user_code = URL(tado_device_url).query.get("user_code")
 
         async def _wait_for_login() -> None:
             assert self.tado is not None
             _LOGGER.debug("Waiting for device activation")
             try:
+                # device_activation blocks and should run in executor
                 await self.hass.async_add_executor_job(self.tado.device_activation)
             except Exception as ex:  # pragma: no cover - propagate for logging
                 _LOGGER.exception("Error while waiting for device activation")
