@@ -1,9 +1,9 @@
 DOMAIN = "tado_boost"
 PLATFORMS = []
-CONF_USERNAME = "username"
-CONF_PASSWORD = "password"
+OAUTH2_AUTHORIZE = "https://auth.tado.com/oauth/authorize"
+OAUTH2_TOKEN = "https://auth.tado.com/oauth/token"
+OAUTH2_SCOPES = ["home.user:all"]
 DEFAULT_SCAN_INTERVAL = 60
 DEFAULT_BOOST_MINUTES = 15
 DATA_COORDINATOR = "coordinator"
 API_CLIENT = "api_client"
-

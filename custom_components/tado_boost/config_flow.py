@@ -1,65 +1,24 @@
 from __future__ import annotations
 
 import logging
-import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import callback
-from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD
+from homeassistant.helpers import config_entry_oauth2_flow
+from .const import DOMAIN, OAUTH2_AUTHORIZE, OAUTH2_TOKEN, OAUTH2_SCOPES
 
 _LOGGER = logging.getLogger(__name__)
 
-class TadoBoostConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
+class TadoOAuth2FlowHandler(config_entry_oauth2_flow.OAuth2FlowHandler, domain=DOMAIN):
+    """OAuth2 config flow for Tado Boost using Home Assistant OAuth helper."""
+    DOMAIN = DOMAIN
+    OAUTH2_AUTHORIZE = OAUTH2_AUTHORIZE
+    OAUTH2_TOKEN = OAUTH2_TOKEN
+    OAUTH2_SCOPES = OAUTH2_SCOPES
 
     async def async_step_user(self, user_input=None):
-        errors = {}
-        if user_input is not None:
-            # validate credentials by attempting to authenticate using a temporary API client
-            from .api import TadoApi, TadoApiError
-            api = TadoApi(self.hass, user_input[CONF_USERNAME], user_input[CONF_PASSWORD])
-            try:
-                await api.async_authenticate()
-            except TadoApiError as err:
-                _LOGGER.debug("Auth failed: %s", err)
-                errors["base"] = "invalid_auth"
-            else:
-                return self.async_create_entry(title=user_input[CONF_USERNAME], data=user_input)
-
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_USERNAME): str,
-                vol.Required(CONF_PASSWORD): str,
-            }),
-            errors=errors,
-        )
+        # Delegate to the helper which starts the authorize flow
+        return await super().async_step_user()
 
     async def async_step_reauth(self, data):
-        # offer reauth confirm step
+        # Start the reauth (will prompt user to re-login)
         self._reauth_entry = data
-        return await self.async_step_reauth_confirm()
-
-    async def async_step_reauth_confirm(self, user_input=None):
-        errors = {}
-        if user_input is not None:
-            from .api import TadoApi, TadoApiError
-            username = self._reauth_entry.get(CONF_USERNAME)
-            api = TadoApi(self.hass, username, user_input[CONF_PASSWORD])
-            try:
-                await api.async_authenticate()
-            except TadoApiError:
-                errors["base"] = "invalid_auth"
-            else:
-                # update existing entry
-                entries = list(self._async_current_entries())
-                if entries:
-                    entry = entries[0]
-                    self.hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_PASSWORD: user_input[CONF_PASSWORD]})
-                return self.async_abort(reason="reauth_successful")
-
-        return self.async_show_form(
-            step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
-            errors=errors,
-        )
-
+        return await super().async_step_reauth(data)
