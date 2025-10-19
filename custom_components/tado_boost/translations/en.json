@@ -12,6 +12,8 @@
     },
     "error": {
       "invalid_auth": "Invalid authorization. Please try again.",
+      "cannot_connect": "Cannot connect to Tado or required dependencies missing. Check logs.",
+      "no_homes": "No homes found in Tado account.",
       "unknown": "Unknown error"
     }
   },
@@ -28,4 +30,3 @@
     }
   }
 }
-

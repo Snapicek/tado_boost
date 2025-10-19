@@ -5,8 +5,15 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
 
-from PyTado.interface import Tado
-import PyTado.exceptions
+# Safe import of PyTado to give clearer error messages in dev environments
+try:
+    from PyTado.interface import Tado
+    import PyTado.exceptions as _pytado_exceptions
+    HAS_PYTADO = True
+except Exception:  # pragma: no cover - dev env may not have PyTado
+    Tado = None  # type: ignore
+    _pytado_exceptions = None
+    HAS_PYTADO = False
 
 from .const import DOMAIN, DATA_COORDINATOR, API_CLIENT, DEFAULT_SCAN_INTERVAL, CONF_REFRESH_TOKEN
 from .api import TadoApi, TadoApiError
@@ -23,6 +30,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug("%s: async_setup_entry starting for entry_id=%s", DOMAIN, entry.entry_id)
+
+    if not HAS_PYTADO:
+        _LOGGER.error(
+            "%s: Required dependency 'python-tado' not available. Please ensure the integration's requirements are installed.",
+            DOMAIN,
+        )
+        return False
+
     # Expect a refresh token in the entry data (device-activation flow)
     if CONF_REFRESH_TOKEN not in entry.data:
         _LOGGER.error("Missing refresh token in config entry %s", entry.entry_id)
@@ -37,10 +52,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         tado = await hass.async_add_executor_job(create_tado_instance)
         _LOGGER.debug("PyTado instance created successfully")
-    except PyTado.exceptions.TadoWrongCredentialsException as err:
-        _LOGGER.exception("Invalid Tado credentials")
-        return False
-    except PyTado.exceptions.TadoException as err:
+    except Exception as err:
+        # If the PyTado library raises specific exceptions we can log them, otherwise log generic
         _LOGGER.exception("Error creating Tado instance: %s", err)
         return False
 
