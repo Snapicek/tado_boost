@@ -166,15 +166,13 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
                 data={CONF_REFRESH_TOKEN: self.refresh_token},
             )
 
-        # Show progress step
-        return self.async_show_progress(
+        # Show form with activation link
+        return self.async_show_form(
             step_id="user",
-            progress_action="wait_for_device",
             description_placeholders={
                 "url": tado_device_url,
                 "code": user_code,
             },
-            progress_task=self.login_task,
         )
 
     async def async_step_reauth(self, data: Mapping[str, Any]) -> config_entries.ConfigEntry | dict:
