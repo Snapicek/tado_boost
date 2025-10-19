@@ -24,4 +24,3 @@ class TadoCoordinator(DataUpdateCoordinator):
             return data
         except TadoApiError as err:
             raise UpdateFailed(err)
-
