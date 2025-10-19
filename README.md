@@ -21,30 +21,6 @@ Instalace lokálně (manual)
 2. Restartujte Home Assistant.
 3. V UI: Settings → Devices & Services → Add Integration → hledejte "Tado Boost".
 
-Instalace přes GitHub + HACS (doporučeno pro uživatele)
----------------------------------------------------
-Postup pro zveřejnění repozitáře na GitHub a instalaci přes HACS:
-
-1) Vytvořte veřejný repozitář na GitHubu (např. `tado_boost`).
-2) Nahrajte tento projekt do repozitáře a vytvořte release (tag). Příklad příkazů (Windows cmd):
-
-```cmd
-cd C:\Users\Pepik\IdeaProjects\tado_boost
-git init
-git add --all
-git commit -m "Initial Tado Boost integration with OAuth2 support"
-git branch -M main
-git remote add origin https://github.com/snapicek/tado_boost.git
-git push -u origin main
-```
-
-3) Na GitHubu vytvořte nový Release (např. `v1.0.0`) — HACS preferuje, když je k dispozici alespoň jeden tag/release.
-
-4) Přidejte repozitář do HACS (Home Assistant Community Store):
-   - V Home Assistant → HACS → Integrations → tři tečky (vpravo nahoře) → Custom repositories → vložte URL do vašeho repozitáře (https://github.com/snapicek/tado_boost) a vyberte kategorii "integration".
-   - Po přidání nainstalujte integraci přes HACS → Integrations → Install.
-
-Poznámka: v `hacs.json` jsou meta informace; upravte pole `owner`/`repo` podle vašeho GitHub účtu před publikováním.
 
 OAuth konfigurace (Tado)
 ------------------------
