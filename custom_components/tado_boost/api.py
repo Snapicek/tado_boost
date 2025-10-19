@@ -53,13 +53,11 @@ class TadoApi:
                 if not zone_id:
                     continue
                 
-                # Attach home_id to the zone object for later use
                 zone["home_id"] = home_id
 
                 try:
                     state = await self._run(self._tado.get_zone_state, home_id, zone_id)
-                    state_data = state.data if hasattr(state, "data") else {}
-                    all_states[int(zone_id)] = {"zone": zone, "state": state_data}
+                    all_states[int(zone_id)] = {"zone": zone, "state": state.data}
                 except TadoApiError:
                     _LOGGER.exception("Failed to get state for zone %s in home %s", zone_id, home_id)
                 except (ValueError, TypeError):
@@ -76,15 +74,14 @@ class TadoApi:
             zone_id,
             duration_minutes,
         )
-        # We set a manual temperature of 25°C for the boost duration.
         await self._run(
             self._tado.set_zone_overlay,
             home_id,
             zone_id,
-            "MANUAL",  # overlay type
+            "MANUAL",
             25.0,  # temperature
             duration_minutes * 60,  # duration in seconds
-            "HEATING",  # power
+            "HEATING",
         )
 
     async def async_clear_overlay(self, home_id: int, zone_id: int):

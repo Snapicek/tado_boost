@@ -1,7 +1,9 @@
 DOMAIN = "tado_boost"
 
-# Constants used by the integration
+CONF_REFRESH_TOKEN = "refresh_token"
+
 DEFAULT_SCAN_INTERVAL = 60
 DEFAULT_BOOST_MINUTES = 15
+
 DATA_COORDINATOR = "coordinator"
 API_CLIENT = "api_client"

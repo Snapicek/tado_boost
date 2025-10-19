@@ -4,8 +4,8 @@
   "version": "1.0.5",
   "documentation": "https://github.com/snapicek/tado_boost",
   "issue_tracker": "https://github.com/snapicek/tado_boost/issues",
-  "requirements": ["python-tado==0.18.15"],
-  "dependencies": ["application_credentials"],
+  "requirements": ["python-tado==0.19.1", "yarl"],
+  "dependencies": [],
   "codeowners": ["@snapicek"],
   "config_flow": true,
   "iot_class": "cloud_polling"
