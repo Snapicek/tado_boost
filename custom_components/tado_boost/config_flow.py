@@ -71,7 +71,6 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
                 def _init_tado_and_get_url() -> tuple[Tado, str | None]:
                     """Run initial blocking Tado calls in an executor."""
                     tado = Tado()
-                    # This must be called as a method.
                     url = tado.device_verification_url()
                     return tado, url
 
@@ -126,9 +125,9 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
         _LOGGER.debug("Login task completed successfully, fetching refresh token")
         try:
             self.refresh_token = await self.hass.async_add_executor_job(
-                self.tado.get_refresh_token
+                lambda: self.tado.get_refresh_token()
             )
-            tado_me = await self.hass.async_add_executor_job(self.tado.get_me)
+            tado_me = await self.hass.async_add_executor_job(lambda: self.tado.get_me())
         except Exception:
             _LOGGER.exception("Failed to get refresh token or account info from Tado")
             return self.async_abort(reason="cannot_connect")
@@ -154,7 +153,7 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
         _LOGGER.debug("Waiting for device activation (background task started)")
         try:
             await asyncio.wait_for(
-                self.hass.async_add_executor_job(self.tado.device_activation),
+                self.hass.async_add_executor_job(lambda: self.tado.device_activation()),
                 timeout=DEVICE_ACTIVATION_TIMEOUT,
             )
         except asyncio.TimeoutError:
@@ -162,7 +161,7 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
             raise
 
         status = await self.hass.async_add_executor_job(
-            self.tado.device_activation_status
+            lambda: self.tado.device_activation_status()
         )
         _LOGGER.debug("Device activation status after wait: %s", status)
         if status is not DeviceActivationStatus.COMPLETED:
