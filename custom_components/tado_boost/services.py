@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry
+from homeassistant.helpers import config_validation as cv
 from .const import DOMAIN, API_CLIENT, DATA_COORDINATOR, DEFAULT_BOOST_MINUTES
 
 _LOGGER = logging.getLogger(__name__)
 
 SERVICE_BOOST_ALL = "boost_all_zones"
 
-BOOST_SCHEMA = {}
+BOOST_SCHEMA = vol.Schema({vol.Optional("minutes", default=DEFAULT_BOOST_MINUTES): vol.All(int, vol.Range(min=1, max=240))})
 
 
 def async_register_services(hass: HomeAssistant, entry):
@@ -55,5 +57,4 @@ def async_register_services(hass: HomeAssistant, entry):
 
         hass.async_create_task(_restore())
 
-    hass.services.async_register(DOMAIN, SERVICE_BOOST_ALL, _handle_boost, schema=None)
-
+    hass.services.async_register(DOMAIN, SERVICE_BOOST_ALL, _handle_boost, schema=BOOST_SCHEMA)
