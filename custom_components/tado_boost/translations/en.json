@@ -7,7 +7,7 @@
     "step": {
       "user": {
         "title": "Connect Tado account",
-        "description": "To link your Tado account, go to the following URL and enter the code. After you have authorized, come back here and submit.\n\nURL: [{url}]({url})\nCode: {code}"
+        "description": "Please click submit to start the Tado device activation process."
       },
       "activation": {
         "title": "Awaiting Tado Authorization",

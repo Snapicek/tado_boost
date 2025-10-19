@@ -63,6 +63,7 @@ class TadoBoostFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_abort(reason="cannot_connect")
 
         # Show the form with the URL and code for the first time
+        _LOGGER.debug("Displaying activation form with URL: %s and Code: %s", self.api.auth_url, self.api.user_code)
         return self.async_show_form(
             step_id="activation",
             description_placeholders={"url": self.api.auth_url, "code": self.api.user_code},
