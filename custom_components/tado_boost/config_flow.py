@@ -5,6 +5,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 
+# IMPORTANT: Ensure this imports TadoBoostApi, not TadoApi
 from .api import TadoBoostApi
 from .const import CONF_REFRESH_TOKEN, DOMAIN
 
@@ -23,6 +24,7 @@ class TadoBoostFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step. This will start the device activation flow."""
         if not self.api:
+            # Pass entry=None for the initial setup, as there's no entry yet
             self.api = TadoBoostApi(self.hass, entry=None)
 
         try:
@@ -73,6 +75,7 @@ class TadoBoostFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         # We need to get the home info to set a unique ID
         try:
+            # Use the _run method of TadoBoostApi to execute PyTado functions
             tado_me = await self.api._run(self.api._tado.get_me)
         except Exception as e:
             _LOGGER.exception("Failed to get Tado account info after login: %s", e)
