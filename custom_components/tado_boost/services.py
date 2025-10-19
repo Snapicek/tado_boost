@@ -63,3 +63,9 @@ def async_register_services(hass: HomeAssistant, entry):
         hass.async_create_task(_restore())
 
     hass.services.async_register(DOMAIN, SERVICE_BOOST_ALL, _handle_boost, schema=BOOST_SCHEMA)
+
+
+def async_unregister_services(hass: HomeAssistant) -> None:
+    """Unregister services for the Tado Boost integration."""
+    _LOGGER.debug("Unregistering services for domain %s", DOMAIN)
+    hass.services.async_remove(DOMAIN, SERVICE_BOOST_ALL)

@@ -18,6 +18,7 @@ except Exception:  # pragma: no cover - dev env may not have PyTado
 from .const import DOMAIN, DATA_COORDINATOR, API_CLIENT, DEFAULT_SCAN_INTERVAL, CONF_REFRESH_TOKEN
 from .api import TadoApi, TadoApiError
 from .coordinator import TadoCoordinator
+from . import services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -72,7 +73,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
 
     # register services
-    from . import services
     services.async_register_services(hass, entry)
     _LOGGER.debug("Services registered for entry %s", entry.entry_id)
 
@@ -82,6 +82,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug("Unloading entry %s for %s", entry.entry_id, DOMAIN)
+
+    # Unregister services
+    services.async_unregister_services(hass)
+
     data = hass.data[DOMAIN].pop(entry.entry_id, None)
     if not data:
         _LOGGER.debug("No data found for entry %s during unload", entry.entry_id)
