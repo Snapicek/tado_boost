@@ -71,8 +71,8 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
                 def _init_tado_and_get_url() -> tuple[Tado, str | None]:
                     """Run initial blocking Tado calls in an executor."""
                     tado = Tado()
-                    # This is a property, not a method. The executor handles the blocking call.
-                    url = tado.device_verification_url
+                    # This must be called as a method.
+                    url = tado.device_verification_url()
                     return tado, url
 
                 self.tado, self.tado_device_url = await self.hass.async_add_executor_job(
