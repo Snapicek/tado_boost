@@ -2,11 +2,11 @@
   "domain": "tado_boost",
   "name": "Tado Boost",
   "version": "1.0.1",
-  "documentation": "https://github.com/<your-github-username>/tado_boost",
-  "issue_tracker": "https://github.com/<your-github-username>/tado_boost/issues",
+  "documentation": "https://github.com/snapicek/tado_boost",
+  "issue_tracker": "https://github.com/snapicek/tado_boost/issues",
   "requirements": [],
   "dependencies": [],
-  "codeowners": ["@<your-github-username>"],
+  "codeowners": ["@snapicek"],
   "config_flow": true,
   "iot_class": "cloud_polling"
 }

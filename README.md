@@ -34,14 +34,14 @@ git init
 git add --all
 git commit -m "Initial Tado Boost integration with OAuth2 support"
 git branch -M main
-git remote add origin https://github.com\<your-github-username>\tado_boost.git
+git remote add origin https://github.com/snapicek/tado_boost.git
 git push -u origin main
 ```
 
 3) Na GitHubu vytvořte nový Release (např. `v1.0.0`) — HACS preferuje, když je k dispozici alespoň jeden tag/release.
 
 4) Přidejte repozitář do HACS (Home Assistant Community Store):
-   - V Home Assistant → HACS → Integrations → tři tečky (vpravo nahoře) → Custom repositories → vložte URL do vašeho repozitáře (https://github.com/<your-github-username>/tado_boost) a vyberte kategorii "integration".
+   - V Home Assistant → HACS → Integrations → tři tečky (vpravo nahoře) → Custom repositories → vložte URL do vašeho repozitáře (https://github.com/snapicek/tado_boost) a vyberte kategorii "integration".
    - Po přidání nainstalujte integraci přes HACS → Integrations → Install.
 
 Poznámka: v `hacs.json` jsou meta informace; upravte pole `owner`/`repo` podle vašeho GitHub účtu před publikováním.
@@ -69,7 +69,7 @@ data:
 
 Tipy a doporučení před zveřejněním
 ---------------------------------
-- V `manifest.json` a `CODEOWNERS` nahraďte `@<your-github-username>` vaším uživatelským jménem.
+- V `manifest.json` a `CODEOWNERS` nahraďte `@snapicek` vaším uživatelským jménem.
 - Ujistěte se, že `hacs.json` obsahuje správné `owner` a `repo` pole.
 - Přidejte `README.md` a screenshoty konfigurace pro lepší přijetí v HACS. HACS dále preferuje, když je repozitář veřejný a má alespoň jeden release.
 - Přidejte `strings.json` (překlady) pro lepší UI zážitek; v této verzi je základní `translations/en.json` k dispozici.

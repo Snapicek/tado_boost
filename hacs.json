@@ -1,6 +1,6 @@
 {
   "name": "Tado Boost",
-  "owner": "<your-github-username>",
+  "owner": "snapicek",
   "repo": "tado_boost",
   "content_in_root": false,
   "render_readme": true,
