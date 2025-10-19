@@ -7,12 +7,12 @@ from homeassistant.data_entry_flow import FlowResult
 
 # IMPORTANT: Ensure this imports TadoBoostApi, not TadoApi
 from .api import TadoBoostApi
-from .const import CONF_REFRESH_TOKEN, DOMAIN
+from .const import CONF_REFRESH_TOKEN, DOMAIN # Keep DOMAIN import for consistency, but use hardcoded value below for testing
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class TadoBoostFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+class TadoBoostFlowHandler(config_entries.ConfigFlow, domain="tado_boost"): # Changed DOMAIN to hardcoded string
     """Handle a config flow for Tado Boost, inspired by tado-assist."""
 
     VERSION = 1
