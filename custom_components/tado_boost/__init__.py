@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import logging
 
-from PyTado.interface import Tado
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
-from .api import TadoApi
+from .api import TadoBoostApi
 from .const import (
     API_CLIENT,
     CONF_REFRESH_TOKEN,
@@ -28,7 +27,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Tado Boost from a config entry."""
+    """Set up Tado Boost from a config entry using the tado-assist architecture."""
     _LOGGER.debug("Setting up Tado Boost entry: %s", entry.entry_id)
 
     refresh_token = entry.data.get(CONF_REFRESH_TOKEN)
@@ -36,14 +35,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.error("Missing refresh token in config entry %s", entry.entry_id)
         return False
 
+    # Create the stateful API instance, which will manage the token
+    api = TadoBoostApi(hass, entry, refresh_token=refresh_token)
+    
+    # Initialize it to confirm the token is valid and get initial status
     try:
-        # Use a keyword argument for a safer way to initialize
-        tado = await hass.async_add_executor_job(lambda: Tado(refresh_token=refresh_token))
+        await api.async_initialize()
     except Exception as err:
-        _LOGGER.exception("Error creating Tado instance from refresh token: %s", err)
+        _LOGGER.exception("Error initializing Tado API with refresh token: %s", err)
         return False
 
-    api = TadoApi(hass, tado, entry)
     coordinator = TadoCoordinator(hass, api, update_interval=DEFAULT_SCAN_INTERVAL)
 
     await coordinator.async_config_entry_first_refresh()

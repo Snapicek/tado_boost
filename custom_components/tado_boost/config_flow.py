@@ -1,108 +1,81 @@
-from __future__ import annotations
-
-import asyncio
 import logging
-from collections.abc import Mapping
 from typing import Any
 
 import voluptuous as vol
-from PyTado.exceptions import TadoException
-from PyTado.interface import Tado
-from yarl import URL
-
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
-from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
+from .api import TadoBoostApi
 from .const import CONF_REFRESH_TOKEN, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-DEVICE_ACTIVATION_TIMEOUT = 120
-
 
 class TadoBoostFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Tado Boost."""
+    """Handle a config flow for Tado Boost, inspired by tado-assist."""
 
     VERSION = 1
 
     def __init__(self) -> None:
         """Initialize the flow handler."""
-        self.tado: Tado | None = None
-        self.tado_device_url: str | None = None
-        self.user_code: str | None = None
-        self.login_task: asyncio.Task | None = None
+        self.api: TadoBoostApi | None = None
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Handle the initial step of the device activation flow."""
-        if user_input is not None:
-            # User has seen the code and clicked submit, move to the wait step
-            return await self.async_step_wait()
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Handle the initial step. This will start the device activation flow."""
+        if not self.api:
+            self.api = TadoBoostApi(self.hass, entry=None)
 
         try:
-            self.tado = await self.hass.async_add_executor_job(Tado)
-            self.tado_device_url = await self.hass.async_add_executor_job(
-                self.tado.device_verification_url
-            )
-            self.user_code = URL(self.tado_device_url).query.get("user_code")
-        except (TadoException, Exception) as e:
-            _LOGGER.exception("Failed to get Tado device verification URL: %s", e)
+            status = await self.api.async_initialize()
+            if status == "COMPLETED":
+                return await self.async_step_finish()
+            if status in ["NOT_STARTED", "PENDING"]:
+                return await self.async_step_activation()
+            
+            _LOGGER.error("Unknown Tado activation status: %s", status)
             return self.async_abort(reason="cannot_connect")
 
+        except Exception as e:
+            _LOGGER.exception("Error during Tado initialization: %s", e)
+            return self.async_abort(reason="cannot_connect")
+
+    async def async_step_activation(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Show the activation link and wait for the user to submit."""
+        assert self.api is not None
+
+        if user_input is not None:
+            # User has clicked submit, now we wait for activation
+            try:
+                success = await self.api.async_activate_device()
+                if success:
+                    return await self.async_step_finish()
+                # If not successful, we show the form again, maybe with an error
+                return self.async_show_form(
+                    step_id="activation",
+                    description_placeholders={"url": self.api.auth_url, "code": self.api.user_code},
+                    errors={"base": "activation_failed"},
+                    data_schema=vol.Schema({}),
+                )
+            except Exception as e:
+                _LOGGER.exception("Error during Tado device activation: %s", e)
+                return self.async_abort(reason="cannot_connect")
+
+        # Show the form with the URL and code for the first time
         return self.async_show_form(
-            step_id="user",
-            description_placeholders={
-                "url": self.tado_device_url,
-                "code": self.user_code,
-            },
-            data_schema=vol.Schema({}), # No user input needed on this form
+            step_id="activation",
+            description_placeholders={"url": self.api.auth_url, "code": self.api.user_code},
+            data_schema=vol.Schema({}),
         )
 
-    async def async_step_wait(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Wait for the user to authorize the device on the Tado website."""
-        if not self.login_task:
-            self.login_task = self.hass.async_create_task(self._wait_for_login())
+    async def async_step_finish(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Finish the setup after successful authentication."""
+        assert self.api is not None
 
-        if not self.login_task.done():
-            return self.async_show_progress(
-                step_id="wait",
-                progress_action="wait_for_device",
-                description_placeholders={
-                    "url": self.tado_device_url,
-                    "code": self.user_code,
-                },
-                progress_task=self.login_task,
-            )
-        
+        # We need to get the home info to set a unique ID
         try:
-            await self.login_task
+            tado_me = await self.api._run(self.api._tado.get_me)
         except Exception as e:
-            _LOGGER.exception("Device activation failed: %s", e)
-            if isinstance(e, asyncio.TimeoutError):
-                return self.async_show_progress_done(next_step_id="timed_out")
-            return self.async_show_progress_done(next_step_id="activation_error")
-
-        return self.async_show_progress_done(next_step_id="finish_login")
-    
-    async def async_step_timed_out(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Show timeout error and offer to retry."""
-        return self.async_abort(reason="activation_timeout")
-
-    async def async_step_activation_error(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Show a generic activation error."""
-        return self.async_abort(reason="cannot_connect")
-
-    async def async_step_finish_login(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Finish the login process after successful device activation."""
-        assert self.tado is not None
-        try:
-            refresh_token = await self.hass.async_add_executor_job(self.tado.get_refresh_token)
-            tado_me = await self.hass.async_add_executor_job(self.tado.get_me)
-        except Exception as e:
-            _LOGGER.exception("Failed to get refresh token or account info: %s", e)
+            _LOGGER.exception("Failed to get Tado account info after login: %s", e)
             return self.async_abort(reason="cannot_connect")
 
         if not tado_me.get("homes"):
@@ -117,13 +90,5 @@ class TadoBoostFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_create_entry(
             title=name,
-            data={CONF_REFRESH_TOKEN: refresh_token},
-        )
-
-    async def _wait_for_login(self) -> None:
-        """Poll Tado until the device activation is completed."""
-        assert self.tado is not None
-        await asyncio.wait_for(
-            self.hass.async_add_executor_job(self.tado.device_activation),
-            timeout=DEVICE_ACTIVATION_TIMEOUT,
+            data={CONF_REFRESH_TOKEN: self.api.refresh_token},
         )
