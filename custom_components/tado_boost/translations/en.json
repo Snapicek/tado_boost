@@ -7,14 +7,21 @@
     "step": {
       "user": {
         "title": "Connect Tado account",
-        "description": "Authenticate with Tado to allow the Tado Boost integration to manage heating overlays."
+        "description": "To link your Tado account, go to the following URL and enter the code. After you have authorized, come back here and submit.\n\nURL: {url}\nCode: {code}"
+      },
+      "wait": {
+        "title": "Awaiting Tado Authorization",
+        "description": "Waiting for you to authorize on the Tado website. If you need them again:\n\nURL: {url}\nCode: {code}"
       }
     },
     "error": {
       "invalid_auth": "Invalid authorization. Please try again.",
+      "unknown": "Unknown error"
+    },
+    "abort": {
       "cannot_connect": "Cannot connect to Tado or required dependencies missing. Check logs.",
       "no_homes": "No homes found in Tado account.",
-      "unknown": "Unknown error"
+      "activation_timeout": "Activation on the Tado website timed out. Please try again."
     }
   },
   "services": {
