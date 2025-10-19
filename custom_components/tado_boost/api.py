@@ -32,9 +32,15 @@ class TadoBoostApi:
             _LOGGER.debug("Using existing Tado instance")
         else:
             _LOGGER.debug("Creating new Tado instance (force_new=%s)", force_new)
+            # Initialize Tado without refresh_token in constructor
             self._tado = await self.hass.async_add_executor_job(
-                lambda: Tado(refresh_token=self.refresh_token)
+                lambda: Tado()
             )
+            # If a refresh token is available, set it on the Tado object
+            if self.refresh_token:
+                await self.hass.async_add_executor_job(
+                    lambda: setattr(self._tado, 'refresh_token', self.refresh_token)
+                )
 
         status = await self.hass.async_add_executor_job(self._tado.device_activation_status)
         self._activation_status = status
