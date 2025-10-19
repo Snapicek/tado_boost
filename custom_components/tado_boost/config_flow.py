@@ -7,7 +7,7 @@ from .const import DOMAIN, OAUTH2_AUTHORIZE, OAUTH2_TOKEN, OAUTH2_SCOPES
 
 _LOGGER = logging.getLogger(__name__)
 
-class TadoOAuth2FlowHandler(config_entry_oauth2_flow.OAuth2FlowHandler, domain=DOMAIN):
+class TadoOAuth2FlowHandler(config_entry_oauth2_flow.OAuth2FlowHandler):
     """OAuth2 config flow for Tado Boost using Home Assistant OAuth helper."""
     DOMAIN = DOMAIN
     OAUTH2_AUTHORIZE = OAUTH2_AUTHORIZE

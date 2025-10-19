@@ -1,7 +1,7 @@
 {
   "domain": "tado_boost",
   "name": "Tado Boost",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "documentation": "https://github.com/snapicek/tado_boost",
   "issue_tracker": "https://github.com/snapicek/tado_boost/issues",
   "requirements": [],
