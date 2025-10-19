@@ -17,10 +17,14 @@ class TadoCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=update_interval),
         )
         self.api = api
+        _LOGGER.debug("TadoCoordinator initialized with interval %s seconds", update_interval)
 
     async def _async_update_data(self):
+        _LOGGER.debug("Coordinator _async_update_data called")
         try:
             data = await self.api.async_get_all_zone_states()
+            _LOGGER.debug("Coordinator fetched %d zone states", len(data))
             return data
         except TadoApiError as err:
+            _LOGGER.exception("Coordinator update failed: %s", err)
             raise UpdateFailed(err)

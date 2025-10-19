@@ -55,20 +55,24 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Failed to get device verification URL")
             return self.async_abort(reason="cannot_connect")
 
+        _LOGGER.debug("Device verification URL obtained: %s", tado_device_url)
         user_code = URL(tado_device_url).query.get("user_code")
+        _LOGGER.debug("Device activation user code: %s", user_code)
 
         async def _wait_for_login() -> None:
             assert self.tado is not None
-            _LOGGER.debug("Waiting for device activation")
+            _LOGGER.debug("Waiting for device activation (task started)")
             try:
                 # device_activation blocks and should run in executor
                 await self.hass.async_add_executor_job(self.tado.device_activation)
             except Exception as ex:  # pragma: no cover - propagate for logging
-                _LOGGER.exception("Error while waiting for device activation")
+                _LOGGER.exception("Error while waiting for device activation: %s", ex)
                 raise
 
+            status = self.tado.device_activation_status()
+            _LOGGER.debug("Device activation status after wait: %s", status)
             if (
-                self.tado.device_activation_status()
+                status
                 is not DeviceActivationStatus.COMPLETED
             ):
                 raise Exception("Device activation not completed")
@@ -77,12 +81,16 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
         if self.login_task is None:
             _LOGGER.debug("Creating task for device activation")
             self.login_task = self.hass.async_create_task(_wait_for_login())
+        else:
+            _LOGGER.debug("Re-using existing login task: done=%s, cancelled=%s", getattr(self.login_task, "done", lambda: False)(), getattr(self.login_task, "cancelled", lambda: False)())
 
         if self.login_task.done():
             _LOGGER.debug("Login task is done, finalizing login")
             if self.login_task.exception():
+                _LOGGER.exception("Login task finished with exception: %s", self.login_task.exception())
                 return self.async_abort(reason="cannot_connect")
 
+            _LOGGER.debug("Login task completed successfully, fetching refresh token")
             # Obtain refresh token and create entry
             try:
                 self.refresh_token = await self.hass.async_add_executor_job(

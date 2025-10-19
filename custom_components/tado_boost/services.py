@@ -17,6 +17,7 @@ BOOST_SCHEMA = vol.Schema({vol.Optional("minutes", default=DEFAULT_BOOST_MINUTES
 
 def async_register_services(hass: HomeAssistant, entry):
     async def _handle_boost(call: ServiceCall):
+        _LOGGER.debug("Boost service called with data: %s", call.data)
         duration = call.data.get("minutes", DEFAULT_BOOST_MINUTES)
         data = hass.data[DOMAIN].get(entry.entry_id)
         if not data:
@@ -27,6 +28,7 @@ def async_register_services(hass: HomeAssistant, entry):
 
         # fetch current states once
         try:
+            _LOGGER.debug("Fetching current zone states before boost")
             states = await api.async_get_all_zone_states()
         except Exception as err:
             _LOGGER.error("Failed to get zone states: %s", err)
@@ -40,17 +42,20 @@ def async_register_services(hass: HomeAssistant, entry):
 
         # Run set overlay calls concurrently but don't flood API for too many zones
         try:
+            _LOGGER.debug("Setting overlays for %d zones for %s minutes", len(tasks), duration)
             await asyncio.gather(*tasks)
         except Exception as err:
             _LOGGER.error("Error setting overlays: %s", err)
 
         # schedule restoration
         async def _restore():
+            _LOGGER.debug("Waiting %s minutes to restore overlays", duration)
             await asyncio.sleep(duration * 60)
             restore_tasks = []
             for zid, orig in original_states.items():
                 restore_tasks.append(api.async_restore_zone_state(zid, orig))
             try:
+                _LOGGER.debug("Restoring overlays for %d zones", len(restore_tasks))
                 await asyncio.gather(*restore_tasks)
             except Exception as err:
                 _LOGGER.error("Error restoring zones: %s", err)
