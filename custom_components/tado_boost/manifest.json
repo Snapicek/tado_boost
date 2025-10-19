@@ -5,12 +5,8 @@
   "documentation": "https://github.com/snapicek/tado_boost",
   "issue_tracker": "https://github.com/snapicek/tado_boost/issues",
   "requirements": ["python-tado==0.18.15"],
-  "dependencies": ["http"],
+  "dependencies": ["application_credentials"],
   "codeowners": ["@snapicek"],
   "config_flow": true,
-  "iot_class": "cloud_polling",
-  "oauth2": {
-    "authorise_url": "https://auth.tado.com/oauth/authorize",
-    "token_url": "https://auth.tado.com/oauth/token"
-  }
+  "iot_class": "cloud_polling"
 }

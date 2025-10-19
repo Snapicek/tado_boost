@@ -4,19 +4,13 @@ import logging
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-# Safe import of PyTado to give clearer error messages in dev environments
-try:
-    from PyTado.interface import Tado
-    import PyTado.exceptions as _pytado_exceptions
-    HAS_PYTADO = True
-except Exception:  # pragma: no cover - dev env may not have PyTado
-    Tado = None  # type: ignore
-    _pytado_exceptions = None
-    HAS_PYTADO = False
+from PyTado.interface import Tado
 
-from .const import DOMAIN, DATA_COORDINATOR, API_CLIENT, DEFAULT_SCAN_INTERVAL, CONF_REFRESH_TOKEN
-from .api import TadoApi, TadoApiError
+from .const import DOMAIN, DATA_COORDINATOR, API_CLIENT, DEFAULT_SCAN_INTERVAL
+from .api import TadoApi
 from .coordinator import TadoCoordinator
 from . import services
 
@@ -24,73 +18,57 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the Tado Boost component."""
     hass.data.setdefault(DOMAIN, {})
-    _LOGGER.debug("%s: async_setup called", DOMAIN)
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    _LOGGER.debug("%s: async_setup_entry starting for entry_id=%s", DOMAIN, entry.entry_id)
+    """Set up Tado Boost from a config entry."""
+    _LOGGER.debug("Setting up Tado Boost entry: %s", entry.entry_id)
 
-    if not HAS_PYTADO:
-        _LOGGER.error(
-            "%s: Required dependency 'python-tado' not available. Please ensure the integration's requirements are installed.",
-            DOMAIN,
-        )
-        return False
+    # This is the correct way to manage the token with Application Credentials
+    session = OAuth2Session(hass, entry)
+    
+    # This will refresh the token if it's expired
+    await session.async_ensure_token_valid()
 
-    # Expect a refresh token in the entry data (device-activation flow)
-    if CONF_REFRESH_TOKEN not in entry.data:
-        _LOGGER.error("Missing refresh token in config entry %s", entry.entry_id)
-        return False
+    # Get the token for the PyTado library
+    token = entry.data["token"]
 
-    # Create a PyTado instance using saved refresh token
-    def create_tado_instance():
-        _LOGGER.debug("Creating PyTado instance from refresh token")
-        tado = Tado(saved_refresh_token=entry.data[CONF_REFRESH_TOKEN])
-        return tado
+    # Create the Tado API instance
+    tado = Tado(token=token)
 
-    try:
-        tado = await hass.async_add_executor_job(create_tado_instance)
-        _LOGGER.debug("PyTado instance created successfully")
-    except Exception as err:
-        # If the PyTado library raises specific exceptions we can log them, otherwise log generic
-        _LOGGER.exception("Error creating Tado instance: %s", err)
-        return False
-
-    # Create API wrapper
+    # Create our API wrapper and coordinator
     api = TadoApi(hass, tado, entry)
-    _LOGGER.debug("TadoApi wrapper created")
-
     coordinator = TadoCoordinator(hass, api, update_interval=DEFAULT_SCAN_INTERVAL)
-    _LOGGER.debug("TadoCoordinator created, performing first refresh")
+
+    # Perform the first data refresh
     await coordinator.async_config_entry_first_refresh()
-    _LOGGER.debug("First coordinator refresh done")
+    _LOGGER.debug("Initial coordinator refresh complete")
 
     hass.data[DOMAIN][entry.entry_id] = {
         API_CLIENT: api,
         DATA_COORDINATOR: coordinator,
+        "oauth_session": session,
     }
 
-    # register services
+    # Register the services
     services.async_register_services(hass, entry)
-    _LOGGER.debug("Services registered for entry %s", entry.entry_id)
+    _LOGGER.info("Tado Boost integration setup complete for entry %s", entry.entry_id)
 
-    _LOGGER.info("%s integration setup complete for entry %s", DOMAIN, entry.entry_id)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    _LOGGER.debug("Unloading entry %s for %s", entry.entry_id, DOMAIN)
+    """Unload a config entry."""
+    _LOGGER.debug("Unloading Tado Boost entry: %s", entry.entry_id)
 
     # Unregister services
     services.async_unregister_services(hass)
 
-    data = hass.data[DOMAIN].pop(entry.entry_id, None)
-    if not data:
-        _LOGGER.debug("No data found for entry %s during unload", entry.entry_id)
-        return True
-    # cancel coordinator
-    await data[DATA_COORDINATOR].async_cancel()
-    _LOGGER.info("Unloaded entry %s for %s", entry.entry_id, DOMAIN)
+    # Remove the integration data
+    if hass.data[DOMAIN].pop(entry.entry_id, None):
+        _LOGGER.info("Successfully unloaded Tado Boost entry %s", entry.entry_id)
+    
     return True
