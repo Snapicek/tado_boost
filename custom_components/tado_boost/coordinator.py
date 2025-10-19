@@ -4,12 +4,12 @@ import logging
 from datetime import timedelta
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.core import HomeAssistant
-from .api import TadoApi, TadoApiError
+from .api import TadoBoostApi, TadoApiError
 
 _LOGGER = logging.getLogger(__name__)
 
 class TadoCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass: HomeAssistant, api: TadoApi, update_interval: int = 60):
+    def __init__(self, hass: HomeAssistant, api: TadoBoostApi, update_interval: int = 60):
         super().__init__(
             hass,
             _LOGGER,
