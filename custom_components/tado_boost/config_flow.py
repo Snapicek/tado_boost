@@ -68,7 +68,7 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
         if self.tado is None:
             try:
 
-                def _init_tado_and_get_url() -> tuple[Tado, str]:
+                def _init_tado_and_get_url() -> tuple[Tado, str | None]:
                     """Run initial blocking Tado calls in an executor."""
                     tado = Tado()
                     url = tado.device_verification_url
@@ -77,6 +77,14 @@ class TadoOAuth2FlowHandler(ConfigFlow, domain=DOMAIN):
                 self.tado, self.tado_device_url = await self.hass.async_add_executor_job(
                     _init_tado_and_get_url
                 )
+
+                if not isinstance(self.tado_device_url, str):
+                    _LOGGER.error(
+                        "Failed to get a valid device verification URL from Tado, got: %s",
+                        self.tado_device_url,
+                    )
+                    return self.async_abort(reason="cannot_connect")
+
                 self.user_code = URL(self.tado_device_url).query.get("user_code")
             except Exception:
                 _LOGGER.exception("Failed to initialize Tado or get verification URL")
