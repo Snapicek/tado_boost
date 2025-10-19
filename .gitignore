@@ -1,9 +1,19 @@
-.DS_Store
+.idea/
 __pycache__/
 *.pyc
-.env
-.vscode/
-.idea/
+*.pyo
+*.pyd
+.Python
+env/
 .venv/
-.envrc
+venv/
+.env
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.DS_Store
+.vscode/
+node_modules/
+*.log
 

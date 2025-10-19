@@ -79,6 +79,17 @@ Bezpečnost a soukromí
 ---------------------
 - Nikdy nezveřejňujte `client_secret` pokud nemáte důvod; pokud chcete veřejnou integraci, zvažte použít centrálně registrovaného klienta nebo poskytněte instrukce, jak si jej uživatel vytvoří.
 
+Poznámka o autorství a odpovědnosti
+----------------------------------
+Tento projekt obsahuje části kódu, které byly vytvořeny s pomocí AI asistenta (GitHub Copilot). Uveďme následující body otevřeně:
+
+- Kód vznikl za podpory asistenta (Copilot) a nebyl kompletně napsán pouze mým přímým autorským vkladem.
+- Jsem vlastníkem tohoto repozitáře (`snapicek`) a projekt publikuji já, ovšem neručím za případné škody vzniklé používáním tohoto kódu.
+- Kód je poskytován "tak jak je" ("as is"); použití je na vlastní riziko.
+- V repozitáři je přiložena licence (soubor `LICENSE`). Aktuálně je v LICENSE uvedeno "All Rights Reserved" — to znamená, že nejsou udělena žádná oprávnění k distribuci nebo úpravám bez výslovného svolení vlastníka. Pokud chcete jinou právní úpravu (například MIT), upravte prosím soubor `LICENSE` před publikací.
+
+Poznámka: Nejde o právní poradenství. Pokud potřebujete přesné právní vyjádření k autorství nebo odpovědnosti, konzultujte prosím právníka.
+
 Další pomoc
 -----------
 Chcete, abych:
