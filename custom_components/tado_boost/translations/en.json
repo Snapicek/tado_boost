@@ -7,16 +7,17 @@
     "step": {
       "user": {
         "title": "Connect Tado account",
-        "description": "To link your Tado account, go to the following URL and enter the code. After you have authorized, come back here and submit.\n\nURL: {url}\nCode: {code}"
+        "description": "To link your Tado account, go to the following URL and enter the code. After you have authorized, come back here and submit.\n\nURL: [{url}]({url})\nCode: {code}"
       },
-      "wait": {
+      "activation": {
         "title": "Awaiting Tado Authorization",
-        "description": "Waiting for you to authorize on the Tado website. If you need them again:\n\nURL: {url}\nCode: {code}"
+        "description": "Waiting for you to authorize on the Tado website. If you need them again:\n\nURL: [{url}]({url})\nCode: {code}"
       }
     },
     "error": {
       "invalid_auth": "Invalid authorization. Please try again.",
-      "unknown": "Unknown error"
+      "unknown": "Unknown error",
+      "activation_failed": "Activation failed. Please ensure you authorized the device on the Tado website and try again."
     },
     "abort": {
       "cannot_connect": "Cannot connect to Tado or required dependencies missing. Check logs.",
