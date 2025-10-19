@@ -1,0 +1,31 @@
+{
+  "component": {
+    "title": "Tado Boost",
+    "description": "Boost all Tado heating zones for a short period and then restore their original states."
+  },
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Tado account",
+        "description": "Authenticate with Tado to allow the Tado Boost integration to manage heating overlays."
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid authorization. Please try again.",
+      "unknown": "Unknown error"
+    }
+  },
+  "services": {
+    "boost_all_zones": {
+      "name": "Boost all zones",
+      "description": "Boost all heating zones for the given number of minutes.",
+      "fields": {
+        "minutes": {
+          "name": "Minutes",
+          "description": "Duration in minutes to apply the boost (1-240)."
+        }
+      }
+    }
+  }
+}
+

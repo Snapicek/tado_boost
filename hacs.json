@@ -1,8 +1,9 @@
 {
   "name": "Tado Boost",
+  "owner": "<your-github-username>",
+  "repo": "tado_boost",
   "content_in_root": false,
   "render_readme": true,
   "zip_release": false,
   "domains": ["integration"]
 }
-
