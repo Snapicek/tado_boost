@@ -7,18 +7,32 @@ from .const import DOMAIN, OAUTH2_AUTHORIZE, OAUTH2_TOKEN, OAUTH2_SCOPES
 
 _LOGGER = logging.getLogger(__name__)
 
-class TadoOAuth2FlowHandler(config_entry_oauth2_flow.OAuth2FlowHandler):
-    """OAuth2 config flow for Tado Boost using Home Assistant OAuth helper."""
-    DOMAIN = DOMAIN
-    OAUTH2_AUTHORIZE = OAUTH2_AUTHORIZE
-    OAUTH2_TOKEN = OAUTH2_TOKEN
-    OAUTH2_SCOPES = OAUTH2_SCOPES
+# Try to use Home Assistant's OAuth2 helper if available. If not, provide a
+# minimal fallback ConfigFlow to avoid import-time errors (will abort at runtime).
+try:
+    class TadoOAuth2FlowHandler(config_entry_oauth2_flow.OAuth2FlowHandler):
+        """OAuth2 config flow for Tado Boost using Home Assistant OAuth helper."""
+        DOMAIN = DOMAIN
+        OAUTH2_AUTHORIZE = OAUTH2_AUTHORIZE
+        OAUTH2_TOKEN = OAUTH2_TOKEN
+        OAUTH2_SCOPES = OAUTH2_SCOPES
 
-    async def async_step_user(self, user_input=None):
-        # Delegate to the helper which starts the authorize flow
-        return await super().async_step_user()
+        async def async_step_user(self, user_input=None):
+            # Delegate to the helper which starts the authorize flow
+            return await super().async_step_user()
 
-    async def async_step_reauth(self, data):
-        # Start the reauth (will prompt user to re-login)
-        self._reauth_entry = data
-        return await super().async_step_reauth(data)
+        async def async_step_reauth(self, data):
+            # Start the reauth (will prompt user to re-login)
+            self._reauth_entry = data
+            return await super().async_step_reauth(data)
+except Exception:  # pragma: no cover - fallback for older/newer HA variants
+    class TadoOAuth2FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+        """Fallback ConfigFlow when OAuth helper is not available."""
+
+        async def async_step_user(self, user_input=None):
+            _LOGGER.error("OAuth2 helper not available in this Home Assistant; aborting config flow")
+            return self.async_abort(reason="oauth_not_supported")
+
+        async def async_step_reauth(self, data):
+            _LOGGER.error("OAuth2 helper not available for reauth; aborting")
+            return self.async_abort(reason="reauth_not_supported")
