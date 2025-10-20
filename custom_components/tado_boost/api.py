@@ -79,15 +79,19 @@ class TadoBoostApi:
         )
 
         try:
-            # A call to get_me will trigger a token refresh in PyTado and
-            # ensure the API is properly initialized.
+            # Explicitly initialize the API using the refresh token. This is more
+            # reliable than relying on the side-effects of another call.
+            await self.hass.async_add_executor_job(self._tado.initialize_api_with_refresh_token)
+
+            # Verify it worked by getting account info.
             await self._run(self._tado.get_me)
+
             self._activation_status = "COMPLETED"
             _LOGGER.info("Tado API re-authenticated successfully.")
             await self._check_and_update_token()
             return True
-        except TadoApiError:
-            _LOGGER.error("Failed to re-authenticate with Tado using the refresh token.")
+        except Exception as e:
+            _LOGGER.exception("Error during Tado re-authentication: %s", e)
             return False
 
     async def _check_and_update_token(self):
