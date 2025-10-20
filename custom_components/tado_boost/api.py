@@ -77,22 +77,32 @@ class TadoBoostApi:
         if not self._tado:
             self._tado = await self.hass.async_add_executor_job(lambda: Tado())
 
+        # Set the refresh token on the PyTado instance
         await self.hass.async_add_executor_job(
             lambda: setattr(self._tado, 'refresh_token', self.refresh_token)
         )
 
         try:
-            me = await self._run(self._tado.get_me)
-            if not me:
-                _LOGGER.error("Authentication failed: get_me returned no data.")
+            # This call should trigger PyTado to use the refresh token to get an
+            # access token and initialize the API.
+            status = await self._run(self._tado.device_activation_status)
+            _LOGGER.debug("Tado activation status during authenticate: %s", status)
+
+            if status == "COMPLETED":
+                self._activation_status = "COMPLETED"
+                _LOGGER.info("Successfully authenticated with Tado using refresh token.")
+                await self._check_and_update_token()
+                return True
+            else:
+                _LOGGER.error(
+                    "Authentication with refresh token failed. Tado activation status: %s",
+                    status,
+                )
                 return False
-            
-            self._activation_status = "COMPLETED"
-            _LOGGER.info("Successfully authenticated with Tado.")
-            await self._check_and_update_token()
-            return True
+
         except TadoApiError as err:
             _LOGGER.exception("Authentication failed during API call: %s", err)
+            # This could happen if the refresh token is invalid.
             return False
 
     async def _check_and_update_token(self):
