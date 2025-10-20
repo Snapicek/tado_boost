@@ -38,11 +38,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Create the stateful API instance, which will manage the token
     api = TadoBoostApi(hass, entry, refresh_token=refresh_token)
     
-    # Initialize it to confirm the token is valid and get initial status
-    try:
-        await api.async_initialize()
-    except Exception as err:
-        _LOGGER.exception("Error initializing Tado API with refresh token: %s", err)
+    # Authenticate with Tado using the refresh token
+    if not await api.async_authenticate():
+        _LOGGER.error("Failed to authenticate with Tado using the refresh token.")
         return False
 
     coordinator = TadoCoordinator(hass, api, update_interval=DEFAULT_SCAN_INTERVAL)
